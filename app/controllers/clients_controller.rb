@@ -1,32 +1,49 @@
+require "prawn"
+
 class ClientsController < ApplicationController
   def index
     @clients = Client.all
     respond_to do |format|
       format.html
-      format.xml { render xml: @clients}
-      format.json { render json: @clients}
+      format.xml { render xml: @clients }
+      format.json { render json: @clients }
     end
   end
 
-  def new 
+  def new
     @client = Client.new(author: cookies[:name])
   end
+
   def create
     @client = Client.new(client_params)
     if @client.save
       flash[:notice] = "Client successfully created"
       if params[:name]
-        cookies[:name] = @client.author       
+        cookies[:name] = @client.author
       end
+    end
   end
 
+  def download_pdf
+    client = Client.find(params[:id])
+    send_data generate_pdf(client),
+              filename: "#{client.name}.pdf",
+              type: "application/pdf"
+  end
   private
 
   def client_params
     params.require(:client).permit(:name)
   end
-end
 
+  def generate_pdf(client)
+    Prawn::Document.new do
+      text client.name, align: :center
+      text "Address: #{client.address}"
+      text "Email: #{client.email}"
+    end.render
+  end
+end
 
 # {"name":"helllo",""} #json parsing
 # params.permit(:name, { emails: [] },
